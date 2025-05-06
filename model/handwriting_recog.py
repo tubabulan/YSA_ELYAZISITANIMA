@@ -157,3 +157,4 @@ print(f"Modelin çıkış boyutu: {dummy_output.shape}")
 
 model = CNNModel(num_classes=len(np.unique(labels)))
 train_model(model, train_loader, test_loader)
+##
