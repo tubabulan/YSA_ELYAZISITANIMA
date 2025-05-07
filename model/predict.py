@@ -55,7 +55,7 @@ def predict_image(image_path, model, encoder):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, "trained_model.pth")
 encoder_path = os.path.join(BASE_DIR, "label_encoder.pkl")
-test_image_path = os.path.join(BASE_DIR, "..", "test", "test_inputs", "img1.png")  # test görseli
+test_image_path = os.path.join(BASE_DIR, "..", "test", "test_inputs", "img2.png")  # test görseli
 
 # 📥 Model ve encoder'ı yükle
 encoder = joblib.load(encoder_path)
