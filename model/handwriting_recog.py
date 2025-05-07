@@ -164,3 +164,4 @@ torch.save(model.state_dict(), model_path)
 joblib.dump(encoder, encoder_path)
 
 print("Model ve LabelEncoder başarıyla kaydedildi.")
+##
