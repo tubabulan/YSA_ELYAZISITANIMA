@@ -9,6 +9,7 @@ import cv2
 import os
 from sklearn.preprocessing import LabelEncoder
 from torchvision import transforms
+import joblib
 
 # Dataset sınıfı
 class CustomDataset(Dataset):
@@ -33,18 +34,18 @@ class CustomDataset(Dataset):
 class CNNModel(nn.Module):
     def __init__(self, num_classes):
         super(CNNModel, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, 3, 1, 1)  # 3 kanal RGB girişi
+        self.conv1 = nn.Conv2d(3, 32, 3, 1, 1)
         self.conv2 = nn.Conv2d(32, 64, 3, 1, 1)
         self.conv3 = nn.Conv2d(64, 128, 3, 1, 1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(128 * 32 * 8, 512)  # Bu kısmı çıkış boyutuna göre ayarladık
+        self.fc1 = nn.Linear(128 * 32 * 8, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
         x = self.pool(torch.relu(self.conv1(x)))
         x = self.pool(torch.relu(self.conv2(x)))
         x = self.pool(torch.relu(self.conv3(x)))
-        x = torch.flatten(x, 1)  # Otomatik olarak batch dışındaki tüm boyutları düzleştirir
+        x = torch.flatten(x, 1)
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -70,7 +71,7 @@ def load_data(csv_path, image_folder, img_size=(256, 64)):
             continue
 
         img = cv2.resize(img, img_size)
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)  # Görseli RGB'ye dönüştür
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
         images.append(img)
         labels.append(label)
 
@@ -82,7 +83,7 @@ def prepare_data(images, labels, batch_size=32):
 
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # RGB için normalizasyon
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
 
     train_dataset = CustomDataset(X_train, y_train, transform=transform)
@@ -136,25 +137,30 @@ def train_model(model, train_loader, test_loader, num_epochs=10, learning_rate=0
 
     print(f"Test Accuracy: {100*correct/total:.2f}%")
 
-# 🔽 Dosya yollarını platformdan bağımsız yap
+# 🔽 Dosya yollarını ayarla
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 csv_path = os.path.join(base_dir, "data", "Train", "train_labels.csv")
 image_folder = os.path.join(base_dir, "data", "Train", "Images")
 
-# 🔽 Veri yükle, encode et, model oluştur ve eğit
 print(f"CSV dosyası mevcut mu? {os.path.exists(csv_path)}")
 print(f"Image klasörü mevcut mu? {os.path.exists(image_folder)}")
 
+# 🔽 Veri yükle ve işle
 images, labels = load_data(csv_path, image_folder)
 encoder = LabelEncoder()
 labels = encoder.fit_transform(labels)
 train_loader, test_loader = prepare_data(images, labels)
 
-# Modelin çıkış boyutunu kontrol et (dummy input ile)
-dummy_input = torch.randn(1, 3, 256, 64)  # 1 resim, 3 kanal (RGB), 256x64 boyutunda
-dummy_output = CNNModel(num_classes=len(np.unique(labels)))(dummy_input)
-print(f"Modelin çıkış boyutu: {dummy_output.shape}")
-
+# 🔽 Model oluştur ve eğit
 model = CNNModel(num_classes=len(np.unique(labels)))
 train_model(model, train_loader, test_loader)
-###
+
+# 🔽 Kaydetme yolları (model klasörüne kaydediyoruz)
+model_dir = os.path.dirname(__file__)
+model_path = os.path.join(model_dir, "trained_model.pth")
+encoder_path = os.path.join(model_dir, "label_encoder.pkl")
+
+torch.save(model.state_dict(), model_path)
+joblib.dump(encoder, encoder_path)
+
+print("Model ve LabelEncoder başarıyla kaydedildi.")
