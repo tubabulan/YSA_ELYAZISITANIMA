@@ -1,47 +1,36 @@
+# main.py
+
+from model import DENEME  # predict_image ve CNNModel burada
+from model.handwriting_recog import ocr, select_image
 import os
-import cv2
-import numpy as np
-import pandas as pd
+import joblib
+import torch
 
-# --- VERİ YÜKLEME FONKSİYONU ---
-def load_data(csv_path, image_folder, img_size=(256, 64)):
-    df = pd.read_csv(csv_path, names=["image_name", "label"], header=1)
-    images = []
-    labels = []
+def main():
+    print("📌 Görsel seçiliyor...")
+    file_path = select_image()
+    if not file_path:
+        print("❌ Görsel seçilmedi.")
+        return
 
-    for idx, row in df.iterrows():
-        img_name = row["image_name"]
-        label = row["label"]
-        img_path = os.path.join(image_folder, img_name)
+    print("📸 OCR işlemi başlıyor...")
+    ocr(file_path)
 
-        if not os.path.exists(img_path):
-            print(f"Geçersiz dosya yolu: {img_path}")
-            continue
+    print("🧠 Eğitilmiş model yükleniyor...")
+    # Model ve encoder yolları
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(base_dir, "model", "trained_model.pth")
+    encoder_path = os.path.join(base_dir, "model", "label_encoder.pkl")
 
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    # Model ve encoder yükleniyor
+    encoder = joblib.load(encoder_path)
+    model = neww.CNNModel(num_classes=len(encoder.classes_))
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+    model.eval()
 
-        if img is None:
-            print(f"HATALI GÖRSEL: {img_name}")
-            continue
+    print("🔍 El yazısı sınıflandırması yapılıyor...")
+    prediction = neww.predict_image(file_path, model, encoder)
+    print(f"✅ Tahmin sonucu: {prediction}")
 
-        img = cv2.resize(img, img_size)
-        img = img / 255.0  # Normalizasyon
-
-        images.append(img)
-        labels.append(label)
-
-    return np.array(images), np.array(labels)
-
-# Dosya yolları
-csv_path = "data/Train/train_labels.csv"
-image_folder = "data/Train/Images/"
-
-# Veriyi yükle
-images, labels = load_data(csv_path, image_folder)
-
-# Kontrol
-print(f"Görsel sayısı: {len(images)}")
-print(f"Etiket sayısı: {len(labels)}")
-
-# İlk birkaç görselin boyutlarını kontrol et
-print(f"İlk görsel boyutu: {images[0].shape}")
+if __name__ == "__main__":
+    main()
