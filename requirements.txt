@@ -17,7 +17,6 @@ scipy==1.15.2
 six==1.17.0
 threadpoolctl==3.6.0
 tzdata==2025.2
-
-torch~=2.5.1
+torch~=2.7.0
 torchvision~=0.20.1
 paddleocr~=2.10.0
